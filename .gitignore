@@ -1,0 +1,27 @@
+# Dependencies
+node_modules
+**/node_modules
+
+# Environment variables
+.env
+*.env
+*.local
+
+# Build outputs
+dist
+/dist
+.output
+/.output
+.nitro
+.vinxi
+.tanstack
+.wrangler
+
+# Database & Generated files
+/generated/prisma
+
+# Logs & OS files
+*.log
+logs
+.DS_Store
+Thumbs.db

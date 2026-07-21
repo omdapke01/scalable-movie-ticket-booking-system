@@ -1,0 +1,68 @@
+datasource db {
+  provider = "postgresql"
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+model User {
+  id        String    @id @default(uuid())
+  email     String    @unique
+  password  String
+  name      String
+  bookings  Booking[]
+  sessions  Session[]
+  createdAt DateTime  @default(now())
+}
+
+model Session {
+  id           String   @id @default(uuid())
+  userId       String
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  refreshToken String?  @unique
+  deviceInfo   String?
+  isRevoked    Boolean  @default(false)
+  expiresAt    DateTime
+  createdAt    DateTime @default(now())
+}
+
+enum SeatStatus {
+  AVAILABLE
+  RESERVED   // Temporary Memory Lock Phase
+  BOOKED     // Permanent Ledger Confirmation
+}
+
+model ShowSeat {
+  id        String     @id @default(uuid())
+  showId    String     // Reference to MongoDB Show ID
+  seatCode  String     // e.g., "A12", "F09", "L13"
+  status    SeatStatus @default(AVAILABLE)
+  version   Int        @default(0) // Optimistic Locking Version Token
+  bookingId String?
+  booking   Booking?   @relation(fields: [bookingId], references: [id])
+
+  @@unique([showId, seatCode]) // CRITICAL: Strict database-level barrier blocking double allocation
+  @@index([showId, status])    // Index optimized for instant seat-map layout generation queries
+}
+
+enum BookingStatus {
+  INITIATED
+  RESERVED
+  SUCCESS
+  FAILED
+  EXPIRED
+}
+
+model Booking {
+  id            String        @id @default(uuid())
+  userId        String
+  user          User          @relation(fields: [userId], references: [id])
+  showId        String        // Reference to MongoDB Show ID
+  status        BookingStatus @default(INITIATED)
+  reservedSeats ShowSeat[]
+  totalAmount   Decimal       @db.Decimal(10, 2)
+  idempotencyKey String?      @unique // Blocks duplicate processing routines
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime      @updatedAt
+}
